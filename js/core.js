@@ -1,51 +1,100 @@
-// js/core.js
-const Core = {
-    // وظيفة لاكتشاف الملفات دون الحاجة لـ API من الراوتر
-    async autoDiscover() {
-        const foundFiles = [];
-        const promises = [];
+/**
+ * SUEZ STREAM - Core Engine (Scraper)
+ * مسؤول عن فحص الشبكة، قراءة مسارات الراوتر، واستخراج روابط الميديا.
+ */
 
-        // سنقوم بعمل فحص متوازي لسرعة التنفيذ
-        for (let i = 1; i <= CONFIG.SCAN_RANGE; i++) {
-            promises.push(this.probeAllExtensions(i));
+import { CONFIG, getBaseUrl, isSupportedFormat } from './config.js';
+
+export const MediaScanner = {
+    
+    /**
+     * الدالة الرئيسية لبدء عملية البحث عن الملفات
+     * @returns {Promise<Array>} مصفوفة تحتوي على كائنات الأفلام المكتشفة
+     */
+    async scanForMedia() {
+        // 1. التحقق مما إذا كنا في وضع التطوير (DEV_MODE)
+        if (CONFIG.DEV_MODE.ENABLED) {
+            console.log("🛠️ تعمل المنصة الآن في وضع التطوير (DEV_MODE). جاري تحميل البيانات الوهمية...");
+            // محاكاة تأخير الشبكة لثانية ونصف لتجربة شكل التحميل
+            return new Promise(resolve => {
+                setTimeout(() => resolve(CONFIG.DEV_MODE.MOCK_DATA), 1500);
+            });
         }
 
-        const results = await Promise.all(promises);
-        return results.filter(file => file !== null);
-    },
+        // 2. وضع التشغيل الفعلي (الاتصال بالراوتر)
+        console.log("🔍 جاري فحص الراوتر بحثاً عن ملفات الميديا...");
+        const baseUrl = getBaseUrl();
+        let discoveredMedia =[];
 
-    async probeAllExtensions(id) {
-        for (const ext of CONFIG.EXTENSIONS) {
-            const url = `${CONFIG.BASE_URL}${id}${ext}`;
-            const isAlive = await this.checkUrl(url);
-            if (isAlive) {
-                // محاولة جلب بيانات وصفية من TMDB بناءً على الرقم كـ ID (اختياري)
-                const meta = await this.getQuickMeta(id);
-                return { id, url, ext, meta };
+        // المرور على المسارات المحتملة للـ USB داخل الراوتر
+        for (const path of CONFIG.USB_PATHS) {
+            const targetUrl = `${baseUrl}${path}`;
+            try {
+                // جلب محتوى صفحة الـ HTTP الخاصة بالراوتر
+                const response = await fetch(targetUrl);
+                
+                if (!response.ok) continue; // إذا كان المسار غير موجود، انتقل للمسار التالي
+                
+                const htmlText = await response.text();
+                
+                // تحليل الـ HTML لاستخراج الملفات
+                const files = this.parseDirectoryHtml(htmlText, targetUrl);
+                discoveredMedia = [...discoveredMedia, ...files];
+
+            } catch (error) {
+                console.warn(`⚠️ تعذر الوصول للمسار ${targetUrl}. قد يكون غير موجود أو محمي بـ CORS.`, error);
             }
         }
-        return null;
+
+        return discoveredMedia;
     },
 
-    // فحص الرابط باستخدام Image لأنه يتخطى بعض قيود CORS الصارمة عن الـ Fetch
-    checkUrl(url) {
-        return new Promise((resolve) => {
-            const video = document.createElement('video');
-            video.src = url;
-            video.preload = 'metadata';
-            video.onloadedmetadata = () => resolve(true);
-            video.onerror = () => resolve(false);
-            // وقت انتظار أقصى ثانية واحدة لكل ملف
-            setTimeout(() => resolve(false), 1500);
+    /**
+     * محلل الـ HTML (HTML Parser)
+     * يبحث عن كل روابط <a> داخل صفحة الراوتر ويستخرج الملفات المدعومة
+     * @param {string} html محتوى الصفحة
+     * @param {string} parentUrl الرابط الأساسي للمجلد
+     * @returns {Array} مصفوفة الملفات
+     */
+    parseDirectoryHtml(html, parentUrl) {
+        const mediaList =[];
+        // استخدام DOMParser لتحويل النص إلى هيكل HTML حقيقي يمكن البحث بداخله
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, 'text/html');
+        
+        // استخراج جميع الروابط
+        const links = doc.querySelectorAll('a');
+        
+        links.forEach(link => {
+            let href = link.getAttribute('href');
+            let filename = link.textContent.trim();
+
+            // تجاهل الروابط التي تعود للخلف (Parent Directory)
+            if (href === '../' || filename.includes('Parent Directory')) return;
+
+            // إذا كان الملف مدعوماً (مثلاً ينتهي بـ .mp4)
+            if (isSupportedFormat(filename)) {
+                // معالجة الروابط لضمان أنها مسارات كاملة (Absolute URLs)
+                const fullUrl = href.startsWith('http') ? href : `${parentUrl}${href}`;
+                
+                mediaList.push({
+                    id: this.generateId(filename),
+                    name: filename,
+                    url: fullUrl,
+                    // يمكننا لاحقاً استخراج الحجم والتاريخ إذا كان الراوتر يعرضهم في جدول
+                    size: 'غير معروف', 
+                    date: new Date().toLocaleDateString('ar-EG')
+                });
+            }
         });
+
+        return mediaList;
     },
 
-    async getQuickMeta(id) {
-        try {
-            // محاولة جلب اسم وفيلم عشوائي من قائمة الأفلام الشائعة لملء البيانات
-            const res = await fetch(`https://api.themoviedb.org/3/movie/${id + 100}?api_key=${CONFIG.TMDB_KEY}&language=ar`);
-            if (res.ok) return await res.json();
-        } catch (e) { return null; }
-        return null;
+    /**
+     * دالة مساعدة لتوليد معرف فريد (ID) لكل فيديو بناءً على اسمه
+     */
+    generateId(filename) {
+        return 'm_' + Math.random().toString(36).substr(2, 9) + '_' + btoa(unescape(encodeURIComponent(filename))).substring(0, 10);
     }
 };

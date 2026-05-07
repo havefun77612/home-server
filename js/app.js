@@ -1,54 +1,106 @@
-// js/app.js
-document.addEventListener('DOMContentLoaded', async () => {
-    // تشغيل الأيقونات
-    if (window.lucide) lucide.createIcons();
+/**
+ * SUEZ STREAM - Main Application Controller
+ * العقل المدبر الذي يربط واجهة المستخدم، محرك البحث، والمشغل معاً.
+ */
 
-    const loader = document.getElementById('loader');
-    
-    console.log("Starting Auto-Discovery on Network...");
+import { MediaScanner } from './core.js';
+import { UI } from './ui.js';
+import { Player } from './player.js';
 
-    try {
-        // فحص الفلاشة تلقائياً
-        const discoveredFiles = await Core.autoDiscover();
+const App = {
+    /**
+     * دالة البدء التي تعمل عند تحميل الصفحة
+     */
+    async init() {
+        console.log("🚀 SUEZ STREAM Initialized...");
+        
+        // 1. تهيئة مشغل الفيديو
+        Player.init();
 
-        if (discoveredFiles.length > 0) {
-            loader.classList.add('hidden');
-            // عرض الملفات واحداً تلو الآخر
-            for (const file of discoveredFiles) {
-                await UI.renderMovie(file);
-            }
-        } else {
-            loader.innerHTML = `
-                <div class="bg-red-500/10 border border-red-500/50 p-6 rounded-2xl text-center">
-                    <i data-lucide="info" class="mx-auto mb-2 text-red-500"></i>
-                    <p class="text-white font-bold">لم نجد ملفات فيديو (1-50)</p>
-                    <p class="text-xs text-slate-400 mt-2">تأكد من تفعيل Insecure Content من إعدادات المتصفح (علامة القفل).</p>
-                </div>
-            `;
-            lucide.createIcons();
+        // 2. ربط أزرار الواجهة بالأحداث (Events)
+        this.bindEvents();
+
+        // 3. بدء عملية البحث عن الملفات فوراً
+        await this.loadMedia();
+    },
+
+    /**
+     * جلب الملفات ورسمها على الشاشة
+     */
+    async loadMedia() {
+        UI.toggleLoading(true); // إظهار مؤشر التحميل
+        
+        try {
+            // الاتصال بـ core.js لجلب الملفات
+            const mediaList = await MediaScanner.scanForMedia();
+            // إرسال الملفات لـ ui.js لرسمها وتوليد البوسترات
+            UI.renderLibrary(mediaList);
+        } catch (error) {
+            console.error("❌ حدث خطأ غير متوقع أثناء فحص الشبكة:", error);
+            UI.toggleLoading(false);
+            UI.elements.emptyState.classList.remove('hidden');
         }
-    } catch (e) {
-        console.error("App Initialization Error:", e);
+    },
+
+    /**
+     * إدارة أحداث المستخدم (الضغط، البحث، التحديث)
+     */
+    bindEvents() {
+        // 1. حدث الضغط على كارت لتشغيل الفيلم
+        // نستخدم (Event Delegation) بوضع الحدث على الشبكة كاملة لتوفير الذاكرة
+        UI.elements.grid.addEventListener('click', (e) => {
+            const card = e.target.closest('.movie-card');
+            if (card) {
+                const url = card.getAttribute('data-url');
+                const title = card.getAttribute('data-title');
+                if (url) Player.open(url, title);
+            }
+        });
+
+        // 2. حدث إعادة الفحص (Rescan)
+        document.getElementById('rescanBtn').addEventListener('click', () => {
+            this.loadMedia();
+        });
+
+        // 3. حدث البحث المباشر في المكتبة المحلية
+        const searchInput = document.getElementById('searchInput');
+        if (searchInput) {
+            searchInput.addEventListener('input', (e) => {
+                const searchTerm = e.target.value.toLowerCase();
+                this.filterCards(searchTerm);
+            });
+        }
+    },
+
+    /**
+     * فلترة الكروت المعروضة بناءً على البحث
+     * 💡 نستخدم طريقة (إخفاء/إظهار CSS) بدلاً من إعادة الرسم (Re-render)
+     * لكي لا نفقد البوسترات التي تعب الراوتر في توليدها!
+     */
+    filterCards(term) {
+        const cards = document.querySelectorAll('.movie-card');
+        let hasVisibleCards = false;
+
+        cards.forEach(card => {
+            const title = card.getAttribute('data-title').toLowerCase();
+            if (title.includes(term)) {
+                card.style.display = 'block';
+                hasVisibleCards = true;
+            } else {
+                card.style.display = 'none';
+            }
+        });
+
+        // إذا لم توجد نتائج بحث، نظهر رسالة "فارغ"
+        if (!hasVisibleCards && cards.length > 0) {
+            UI.elements.emptyState.classList.remove('hidden');
+        } else if (cards.length > 0) {
+            UI.elements.emptyState.classList.add('hidden');
+        }
     }
+};
+
+// تشغيل المنصة بمجرد أن يقوم المتصفح ببناء شجرة الـ HTML (DOM)
+document.addEventListener('DOMContentLoaded', () => {
+    App.init();
 });
-
-function toggleView(view) {
-    const lib = document.getElementById('librarySection');
-    const bro = document.getElementById('browserSection');
-    
-    if (view === 'library') {
-        lib.classList.remove('hidden');
-        bro.classList.add('hidden');
-    } else {
-        lib.classList.add('hidden');
-        bro.classList.remove('hidden');
-    }
-}
-
-function closePlayer() {
-    const modal = document.getElementById('playerModal');
-    const player = document.getElementById('mainPlayer');
-    player.pause();
-    player.src = "";
-    modal.classList.add('hidden');
-}

@@ -3,41 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet">
-    <style>body { font-family: 'Cairo', sans-serif; }</style>
+    <title>متصفح الشبكة السريع</title>
 </head>
-<body class="bg-[#0b0f19] text-white p-8 overflow-hidden">
-    <div class="text-center mb-12">
-        <h2 class="text-4xl font-black mb-3">المتصفح السريع</h2>
-        <p class="text-slate-400 text-sm">بوابتك للوصول لأي موقع بجانب مكتبتك المحلية</p>
-    </div>
+<body class="bg-gray-900 text-white p-5">
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-2xl font-bold mb-6 text-center text-green-400">بوابة المواقع السريعة</h1>
+        
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+            <button onclick="loadSite('https://www.google.com/search?igu=1')" class="bg-blue-600 p-4 rounded-lg hover:bg-blue-700">Google</button>
+            <button onclick="loadSite('https://www.youtube.com')" class="bg-red-600 p-4 rounded-lg hover:bg-red-700">YouTube</button>
+            <button onclick="loadSite('http://192.168.100.1')" class="bg-gray-700 p-4 rounded-lg hover:bg-gray-800">إعدادات الراوتر</button>
+            <button onclick="loadSite('index.html')" class="bg-purple-600 p-4 rounded-lg hover:bg-purple-700">مكتبة الأفلام</button>
+        </div>
 
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-5xl mx-auto">
-        <a href="https://www.google.com" target="_blank" class="group p-8 bg-white/5 rounded-3xl border border-white/5 hover:border-blue-500/50 hover:bg-blue-600/10 transition-all text-center">
-            <div class="text-3xl mb-4 group-hover:scale-110 transition-transform">🔍</div>
-            <span class="font-bold">Google</span>
-        </a>
-        <a href="https://www.youtube.com" target="_blank" class="group p-8 bg-white/5 rounded-3xl border border-white/5 hover:border-red-500/50 hover:bg-red-600/10 transition-all text-center">
-            <div class="text-3xl mb-4 group-hover:scale-110 transition-transform">📺</div>
-            <span class="font-bold">YouTube</span>
-        </a>
-        <a href="http://192.168.100.1" target="_blank" class="group p-8 bg-white/5 rounded-3xl border border-white/5 hover:border-orange-500/50 hover:bg-orange-600/10 transition-all text-center">
-            <div class="text-3xl mb-4 group-hover:scale-110 transition-transform">⚙️</div>
-            <span class="font-bold">الراوتر</span>
-        </a>
-        <a href="https://www.facebook.com" target="_blank" class="group p-8 bg-white/5 rounded-3xl border border-white/5 hover:border-blue-700/50 hover:bg-blue-800/10 transition-all text-center">
-            <div class="text-3xl mb-4 group-hover:scale-110 transition-transform">👥</div>
-            <span class="font-bold">Facebook</span>
-        </a>
-    </div>
-
-    <div class="mt-12 max-w-2xl mx-auto">
-        <div class="relative">
-            <input type="text" placeholder="ابحث في جوجل مباشرة..." id="gSearch" 
-                class="w-full bg-white/5 border border-white/10 rounded-full py-4 px-8 outline-none focus:border-blue-500 transition shadow-2xl">
-            <button onclick="window.open('https://www.google.com/search?q=' + document.getElementById('gSearch').value)" 
-                class="absolute left-3 top-2 bottom-2 bg-blue-600 px-6 rounded-full font-bold text-sm">بحث</button>
+        <div class="w-full h-[70vh] border-4 border-gray-800 rounded-xl overflow-hidden shadow-2xl bg-white">
+            <iframe id="browserFrame" src="about:blank" class="w-full h-full"></iframe>
         </div>
     </div>
+
+    <script>
+        function loadSite(url) {
+            document.getElementById('browserFrame').src = url;
+        }
+    </script>
 </body>
 </html>
