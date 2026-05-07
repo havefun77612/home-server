@@ -1,87 +1,54 @@
-// app.js - المحرك الرئيسي للنظام
+// js/app.js
 document.addEventListener('DOMContentLoaded', async () => {
-    // 1. تهيئة الأيقونات (Lucide Icons)
-    if (window.lucide) {
-        lucide.createIcons();
-    }
+    // تشغيل الأيقونات
+    if (window.lucide) lucide.createIcons();
 
     const loader = document.getElementById('loader');
-    const movieGrid = document.getElementById('movieGrid');
-
-    console.log("جاري فحص الفلاشة تلقائياً...");
+    
+    console.log("Starting Auto-Discovery on Network...");
 
     try {
-        // 2. استدعاء وظيفة الاكتشاف التلقائي من ملف core.js
-        // الوظيفة دي بتقرأ صفحة الراوتر وتطلع منها روابط الملفات والأسماء
-        const files = await Core.autoDiscoverFiles();
+        // فحص الفلاشة تلقائياً
+        const discoveredFiles = await Core.autoDiscover();
 
-        if (files && files.length > 0) {
-            // إخفاء اللودر بمجرد إيجاد ملفات
+        if (discoveredFiles.length > 0) {
             loader.classList.add('hidden');
-
-            // 3. معالجة كل ملف تم إيجاده
-            for (const file of files) {
-                // استدعاء وظيفة العرض من ملف ui.js
-                // الوظيفة دي بتعمل الكارت، بتولد البوستر من الفيديو، وبتضيفه للشبكة
+            // عرض الملفات واحداً تلو الآخر
+            for (const file of discoveredFiles) {
                 await UI.renderMovie(file);
             }
-            
-            console.log(`تم اكتشاف ${files.length} ملف فيديو بنجاح.`);
         } else {
-            // في حالة عدم وجود ملفات أو فشل الوصول للراوتر
             loader.innerHTML = `
-                <div class="text-center p-10 bg-red-900/20 border border-red-500/50 rounded-2xl">
-                    <i data-lucide="alert-triangle" class="mx-auto text-red-500 mb-4 w-12 h-12"></i>
-                    <p class="text-white font-bold">لم يتم العثور على ملفات أو تعذر الوصول للراوتر</p>
-                    <p class="text-sm text-slate-400 mt-2">تأكد من تفعيل HTTP Sharing في إعدادات الراوتر ومن أنك سمحت بالـ Insecure Content في المتصفح.</p>
-                    <button onclick="location.reload()" class="mt-4 bg-white/10 px-4 py-2 rounded-lg text-xs">إعادة المحاولة</button>
+                <div class="bg-red-500/10 border border-red-500/50 p-6 rounded-2xl text-center">
+                    <i data-lucide="info" class="mx-auto mb-2 text-red-500"></i>
+                    <p class="text-white font-bold">لم نجد ملفات فيديو (1-50)</p>
+                    <p class="text-xs text-slate-400 mt-2">تأكد من تفعيل Insecure Content من إعدادات المتصفح (علامة القفل).</p>
                 </div>
             `;
             lucide.createIcons();
         }
-    } catch (error) {
-        console.error("خطأ أثناء تشغيل التطبيق:", error);
-        loader.innerText = "حدث خطأ تقني أثناء تحميل المكتبة.";
+    } catch (e) {
+        console.error("App Initialization Error:", e);
     }
 });
 
-/**
- * وظيفة التبديل بين قسم المكتبة وقسم المتصفح
- * @param {string} view - اسم القسم المراد عرضه ('library' أو 'browser')
- */
 function toggleView(view) {
-    const libSection = document.getElementById('librarySection');
-    const broSection = document.getElementById('browserSection');
-
-    if (view === 'library') {
-        libSection.classList.remove('hidden');
-        broSection.classList.add('hidden');
-    } else if (view === 'browser') {
-        libSection.classList.add('hidden');
-        broSection.classList.remove('hidden');
-    }
+    const lib = document.getElementById('librarySection');
+    const bro = document.getElementById('browserSection');
     
-    // تحديث الأيقونات في حالة وجودها داخل الأقسام المبدلة
-    if (window.lucide) lucide.createIcons();
+    if (view === 'library') {
+        lib.classList.remove('hidden');
+        bro.classList.add('hidden');
+    } else {
+        lib.classList.add('hidden');
+        bro.classList.remove('hidden');
+    }
 }
 
-/**
- * وظيفة إغلاق مشغل الفيديو وتنظيف المصدر
- */
 function closePlayer() {
     const modal = document.getElementById('playerModal');
     const player = document.getElementById('mainPlayer');
-    
-    // إيقاف الفيديو وتفريغ المصدر لتحرير الرامات
     player.pause();
     player.src = "";
-    
     modal.classList.add('hidden');
 }
-
-// إضافة حدث لإغلاق المشغل عند الضغط على زر Escape في الكيبورد
-document.addEventListener('keydown', (e) => {
-    if (e.key === "Escape") {
-        closePlayer();
-    }
-});
