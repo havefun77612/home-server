@@ -1,0 +1,13 @@
+.movie-card {
+    transition: all 0.3s ease;
+}
+.movie-card:hover {
+    transform: translateY(-8px);
+}
+.glass {
+    background: rgba(255, 255, 255, 0.02);
+    backdrop-filter: blur(10px);
+}
+/* إخفاء السكرول بار للمظهر الجمالي */
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-thumb { background: #2563eb; border-radius: 10px; }

@@ -1,116 +1,87 @@
-// app.js
-document.addEventListener('DOMContentLoaded', () => {
-    lucide.createIcons();
-    initApp();
-    
-    // نظام البحث الحي
-    document.getElementById('searchInput').addEventListener('input', (e) => {
-        const term = e.target.value.toLowerCase();
-        const cards = document.querySelectorAll('.movie-card');
-        cards.forEach(card => {
-            const title = card.dataset.title.toLowerCase();
-            card.style.display = title.includes(term) ? 'block' : 'none';
-        });
-    });
+// app.js - المحرك الرئيسي للنظام
+document.addEventListener('DOMContentLoaded', async () => {
+    // 1. تهيئة الأيقونات (Lucide Icons)
+    if (window.lucide) {
+        lucide.createIcons();
+    }
+
+    const loader = document.getElementById('loader');
+    const movieGrid = document.getElementById('movieGrid');
+
+    console.log("جاري فحص الفلاشة تلقائياً...");
+
+    try {
+        // 2. استدعاء وظيفة الاكتشاف التلقائي من ملف core.js
+        // الوظيفة دي بتقرأ صفحة الراوتر وتطلع منها روابط الملفات والأسماء
+        const files = await Core.autoDiscoverFiles();
+
+        if (files && files.length > 0) {
+            // إخفاء اللودر بمجرد إيجاد ملفات
+            loader.classList.add('hidden');
+
+            // 3. معالجة كل ملف تم إيجاده
+            for (const file of files) {
+                // استدعاء وظيفة العرض من ملف ui.js
+                // الوظيفة دي بتعمل الكارت، بتولد البوستر من الفيديو، وبتضيفه للشبكة
+                await UI.renderMovie(file);
+            }
+            
+            console.log(`تم اكتشاف ${files.length} ملف فيديو بنجاح.`);
+        } else {
+            // في حالة عدم وجود ملفات أو فشل الوصول للراوتر
+            loader.innerHTML = `
+                <div class="text-center p-10 bg-red-900/20 border border-red-500/50 rounded-2xl">
+                    <i data-lucide="alert-triangle" class="mx-auto text-red-500 mb-4 w-12 h-12"></i>
+                    <p class="text-white font-bold">لم يتم العثور على ملفات أو تعذر الوصول للراوتر</p>
+                    <p class="text-sm text-slate-400 mt-2">تأكد من تفعيل HTTP Sharing في إعدادات الراوتر ومن أنك سمحت بالـ Insecure Content في المتصفح.</p>
+                    <button onclick="location.reload()" class="mt-4 bg-white/10 px-4 py-2 rounded-lg text-xs">إعادة المحاولة</button>
+                </div>
+            `;
+            lucide.createIcons();
+        }
+    } catch (error) {
+        console.error("خطأ أثناء تشغيل التطبيق:", error);
+        loader.innerText = "حدث خطأ تقني أثناء تحميل المكتبة.";
+    }
 });
 
-async function initApp() {
-    const grid = document.getElementById('movieGrid');
-    const loader = document.getElementById('loader');
-    
-    for (const [id, movieName] of Object.entries(CONFIG.LIBRARY_MAP)) {
-        const movieData = await fetchTMDB(movieName);
-        const validUrl = await findValidExtension(id);
-        
-        if (validUrl) {
-            renderMovie(id, movieName, movieData, validUrl);
-        }
-    }
-    loader.classList.add('hidden');
-}
-
-async function fetchTMDB(title) {
-    try {
-        const res = await fetch(`https://api.themoviedb.org/3/search/movie?api_key=${CONFIG.TMDB_KEY}&query=${encodeURIComponent(title)}&language=ar`);
-        const data = await res.json();
-        return data.results[0] || null;
-    } catch { return null; }
-}
-
-async function findValidExtension(id) {
-    for (const ext of CONFIG.EXTENSIONS) {
-        const url = `${CONFIG.BASE_URL}${id}.${ext}`;
-        try {
-            // إضافة mode: 'no-cors' لتجنب المنع، لكن لاحظ أنها قد لا تعطي ok دائماً
-            // الحل الأضمن هو استخدام الوسم <img> أو <video> مباشرة للفحص
-            const img = new Image();
-            img.src = url; 
-            // إذا كان المسار صحيحاً، المتصفح سيحاول تحميله
-            return url; 
-        } catch (e) { continue; }
-    }
-}
-
-function renderMovie(id, originalTitle, meta, url) {
-    const grid = document.getElementById('movieGrid');
-    const poster = meta ? `https://image.tmdb.org/t/p/w500${meta.poster_path}` : 'https://via.placeholder.com/500x750?text=No+Poster';
-    
-    const card = document.createElement('div');
-    card.className = "movie-card glass rounded-2xl overflow-hidden cursor-pointer transition-all duration-300 group shadow-lg border border-white/5";
-    card.dataset.title = meta ? meta.title : originalTitle;
-    
-    card.innerHTML = `
-        <div class="relative overflow-hidden">
-            <img src="${poster}" alt="${originalTitle}" class="w-full h-[350px] object-cover group-hover:scale-110 transition-transform duration-500">
-            <div class="absolute inset-0 bg-gradient-to-t from-slate-900 via-transparent to-transparent opacity-80"></div>
-            <div class="absolute bottom-4 right-4 bg-blue-600 p-2 rounded-full shadow-lg transform translate-y-12 group-hover:translate-y-0 transition-transform">
-                <i data-lucide="play" class="w-5 h-5 fill-current"></i>
-            </div>
-        </div>
-        <div class="p-4">
-            <h3 class="font-bold truncate text-sm sm:text-base">${meta ? meta.title : originalTitle}</h3>
-            <p class="text-xs text-slate-500 mt-1">${meta ? meta.release_date.split('-')[0] : 'ملف محلي'}</p>
-        </div>
-    `;
-    
-    card.onclick = () => openPlayer(url, meta ? meta.title : originalTitle, meta ? meta.overview : 'لا يوجد وصف متاح لهذا الملف.');
-    grid.appendChild(card);
-    lucide.createIcons();
-}
-
-// تبديل الواجهات
+/**
+ * وظيفة التبديل بين قسم المكتبة وقسم المتصفح
+ * @param {string} view - اسم القسم المراد عرضه ('library' أو 'browser')
+ */
 function toggleView(view) {
-    const lib = document.getElementById('librarySection');
-    const bro = document.getElementById('browserSection');
+    const libSection = document.getElementById('librarySection');
+    const broSection = document.getElementById('browserSection');
+
     if (view === 'library') {
-        lib.classList.remove('hidden');
-        bro.classList.add('hidden');
-    } else {
-        lib.classList.add('hidden');
-        bro.classList.remove('hidden');
+        libSection.classList.remove('hidden');
+        broSection.classList.add('hidden');
+    } else if (view === 'browser') {
+        libSection.classList.add('hidden');
+        broSection.classList.remove('hidden');
     }
-}
-
-function loadWeb(url) {
-    document.getElementById('webFrame').src = url;
-}
-
-// مشغل الفيديو
-function openPlayer(url, title, desc) {
-    const modal = document.getElementById('playerModal');
-    const player = document.getElementById('mainPlayer');
-    document.getElementById('playerTitle').innerText = title;
-    document.getElementById('playerDesc').innerText = desc;
     
-    player.src = url;
-    modal.classList.remove('hidden');
-    player.play();
+    // تحديث الأيقونات في حالة وجودها داخل الأقسام المبدلة
+    if (window.lucide) lucide.createIcons();
 }
 
+/**
+ * وظيفة إغلاق مشغل الفيديو وتنظيف المصدر
+ */
 function closePlayer() {
     const modal = document.getElementById('playerModal');
     const player = document.getElementById('mainPlayer');
+    
+    // إيقاف الفيديو وتفريغ المصدر لتحرير الرامات
     player.pause();
     player.src = "";
+    
     modal.classList.add('hidden');
 }
+
+// إضافة حدث لإغلاق المشغل عند الضغط على زر Escape في الكيبورد
+document.addEventListener('keydown', (e) => {
+    if (e.key === "Escape") {
+        closePlayer();
+    }
+});

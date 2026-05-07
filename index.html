@@ -3,80 +3,57 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Suez Premium Home Server</title>
+    <title>SUEZ Hub | Auto Discover</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap" rel="stylesheet">
-    <style>
-        body { font-family: 'Cairo', sans-serif; background-color: #0f172a; color: #f8fafc; overflow-x: hidden; }
-        .glass { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.1); }
-        .movie-card:hover { transform: translateY(-10px); border-color: #3b82f6; }
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
-    </style>
+    <link rel="stylesheet" href="css/custom.css">
 </head>
-<body>
+<body class="bg-[#05070a] text-slate-100 font-sans">
 
-    <nav class="sticky top-0 z-50 glass px-6 py-4 flex flex-wrap justify-between items-center gap-4">
-        <div class="flex items-center gap-2">
-            <div class="bg-blue-600 p-2 rounded-lg"><i data-lucide="monitor-play" class="text-white"></i></div>
-            <h1 class="text-xl font-bold tracking-tight">SUEZ<span class="text-blue-500">MEDIA</span></h1>
-        </div>
-        
-        <div class="flex flex-1 max-w-md mx-4">
-            <div class="relative w-full">
-                <i data-lucide="search" class="absolute right-3 top-2.5 text-slate-400 w-5 h-5"></i>
-                <input type="text" id="searchInput" placeholder="ابحث في المكتبة..." 
-                       class="w-full bg-slate-800/50 border border-slate-700 rounded-full py-2 pr-10 pl-4 focus:ring-2 focus:ring-blue-500 outline-none">
+    <nav class="sticky top-0 z-50 bg-[#05070a]/90 backdrop-blur-md border-b border-white/5 p-4">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <div class="flex items-center gap-2">
+                <div class="w-8 h-8 bg-blue-600 rounded flex items-center justify-center">
+                    <i data-lucide="monitor-play" class="text-white w-5 h-5"></i>
+                </div>
+                <h1 class="text-xl font-black tracking-tighter">SUEZ<span class="text-blue-500">STREAM</span></h1>
             </div>
-        </div>
-
-        <div class="flex gap-3">
-            <button onclick="toggleView('library')" class="nav-btn bg-blue-600 px-4 py-2 rounded-lg flex items-center gap-2">
-                <i data-lucide="clapperboard" class="w-4 h-4"></i> المكتبة
-            </button>
-            <button onclick="toggleView('browser')" class="nav-btn bg-slate-800 px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-slate-700">
-                <i data-lucide="globe" class="w-4 h-4"></i> المتصفح
-            </button>
+            <div class="flex gap-6">
+                <button onclick="toggleView('library')" class="text-sm font-bold hover:text-blue-500 transition">المكتبة</button>
+                <button onclick="toggleView('browser')" class="text-sm font-bold hover:text-blue-500 transition">المتصفح</button>
+            </div>
         </div>
     </nav>
 
-    <main class="p-6 max-w-[1600px] mx-auto">
-        
+    <main class="max-w-7xl mx-auto p-6">
+        <div id="loader" class="flex flex-col items-center justify-center py-32">
+            <div class="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+            <p class="mt-4 text-slate-400 font-bold">جاري مسح الفلاشة واستخراج البوسترات...</p>
+        </div>
+
         <section id="librarySection">
-            <div id="loader" class="flex flex-col items-center justify-center py-20">
-                <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mb-4"></div>
-                <p class="text-slate-400">جاري فحص الفلاشة وجلب البيانات...</p>
-            </div>
-            <div id="movieGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6"></div>
+            <div id="movieGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                </div>
         </section>
 
-        <section id="browserSection" class="hidden animate-in fade-in duration-500">
-            <div class="glass rounded-2xl overflow-hidden shadow-2xl">
-                <div class="bg-slate-800 p-3 flex gap-2 overflow-x-auto">
-                    <button onclick="loadWeb('https://www.google.com/search?igu=1')" class="bg-slate-700 px-4 py-1 rounded text-sm whitespace-nowrap">Google</button>
-                    <button onclick="loadWeb('https://www.youtube.com')" class="bg-slate-700 px-4 py-1 rounded text-sm whitespace-nowrap">YouTube</button>
-                    <button onclick="loadWeb('http://192.168.100.1')" class="bg-slate-700 px-4 py-1 rounded text-sm whitespace-nowrap">الراوتر</button>
-                </div>
-                <iframe id="webFrame" src="" class="w-full h-[75vh] bg-white"></iframe>
-            </div>
+        <section id="browserSection" class="hidden h-[80vh] rounded-3xl overflow-hidden border border-white/10 shadow-2xl">
+            <iframe src="browser.html" class="w-full h-full bg-white"></iframe>
         </section>
     </main>
 
-    <div id="playerModal" class="fixed inset-0 bg-black/95 hidden z-[100] flex items-center justify-center p-4">
-        <div class="w-full max-w-5xl relative">
-            <button onclick="closePlayer()" class="absolute -top-12 left-0 text-white flex items-center gap-2 hover:text-red-500 transition">
-                <i data-lucide="x-circle"></i> إغلاق المشغل
-            </button>
-            <video id="mainPlayer" controls class="w-full rounded-xl shadow-3xl border border-white/10"></video>
-            <div class="mt-4 p-4 glass rounded-xl">
-                <h2 id="playerTitle" class="text-2xl font-bold"></h2>
-                <p id="playerDesc" class="text-slate-400 mt-2 text-sm leading-relaxed"></p>
+    <div id="playerModal" class="fixed inset-0 bg-black/98 hidden z-[100] flex flex-col items-center justify-center p-4">
+        <div class="w-full max-w-5xl">
+            <div class="flex justify-between items-center mb-4 px-2">
+                <h2 id="playerTitle" class="text-xl font-bold truncate max-w-[70%]"></h2>
+                <button onclick="closePlayer()" class="bg-white/10 hover:bg-red-600 px-4 py-2 rounded-full transition text-sm">إغلاق</button>
             </div>
+            <video id="mainPlayer" controls class="w-full rounded-2xl shadow-2xl aspect-video bg-black border border-white/5"></video>
         </div>
     </div>
 
     <script src="js/config.js"></script>
+    <script src="js/core.js"></script>
+    <script src="js/ui.js"></script>
     <script src="js/app.js"></script>
 </body>
 </html>

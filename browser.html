@@ -1,30 +1,17 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-    <meta charset="UTF-8">
     <script src="https://cdn.tailwindcss.com"></script>
-    <title>متصفح الشبكة السريع</title>
 </head>
-<body class="bg-gray-900 text-white p-5">
-    <div class="max-w-4xl mx-auto">
-        <h1 class="text-2xl font-bold mb-6 text-center text-green-400">بوابة المواقع السريعة</h1>
-        
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-            <button onclick="loadSite('https://www.google.com/search?igu=1')" class="bg-blue-600 p-4 rounded-lg hover:bg-blue-700">Google</button>
-            <button onclick="loadSite('https://www.youtube.com')" class="bg-red-600 p-4 rounded-lg hover:bg-red-700">YouTube</button>
-            <button onclick="loadSite('http://192.168.100.1')" class="bg-gray-700 p-4 rounded-lg hover:bg-gray-800">إعدادات الراوتر</button>
-            <button onclick="loadSite('index.html')" class="bg-purple-600 p-4 rounded-lg hover:bg-purple-700">مكتبة الأفلام</button>
-        </div>
-
-        <div class="w-full h-[70vh] border-4 border-gray-800 rounded-xl overflow-hidden shadow-2xl bg-white">
-            <iframe id="browserFrame" src="about:blank" class="w-full h-full"></iframe>
+<body class="bg-slate-900 text-white p-8">
+    <div class="max-w-4xl mx-auto text-center">
+        <h2 class="text-3xl font-black mb-8">لوحة الوصول السريع</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <a href="https://www.google.com" target="_blank" class="p-6 bg-blue-600/20 border border-blue-500/30 rounded-2xl hover:bg-blue-600 transition">Google Search</a>
+            <a href="https://www.youtube.com" target="_blank" class="p-6 bg-red-600/20 border border-red-500/30 rounded-2xl hover:bg-red-600 transition">YouTube</a>
+            <a href="http://192.168.100.1" target="_blank" class="p-6 bg-slate-700/20 border border-slate-500/30 rounded-2xl hover:bg-slate-700 transition">إعدادات الراوتر</a>
+            <a href="https://www.facebook.com" target="_blank" class="p-6 bg-blue-800/20 border border-blue-800/30 rounded-2xl hover:bg-blue-800 transition">Facebook</a>
         </div>
     </div>
-
-    <script>
-        function loadSite(url) {
-            document.getElementById('browserFrame').src = url;
-        }
-    </script>
 </body>
 </html>
